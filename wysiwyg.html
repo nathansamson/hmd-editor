@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Wysiwyg-editor</title>
+		<style>
+			.editor {
+				width: 400px;
+				height: 200px;
+				border: solid 1px black;
+			}
+		</style>
+	</head>
+	<body onload="startHybrid('hybrid')">
+		<script src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+		
+		<script src="markdown.js"></script>
+		<script src="wysiwyg.js"></script>
+		<script src="hybrid.js"></script>
+		
+		<form action="./wysiwyg.html" method="post">
+			<textarea class="hybrid">*vet*</textarea>
+		</form>
+	</body>
+</html>

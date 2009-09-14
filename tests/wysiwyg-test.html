@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Wysiwyg-editor Test page</title>
+		<style>
+			.editor {
+				width: 400px;
+				height: 200px;
+				border: solid 1px black;
+			}
+		</style>
+		<link href="qunit.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body onload="start();">
+		<!-- <script src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script> -->
+		
+		<script src="../markdown.js"></script>
+		<script src="../wysiwyg.js"></script>
+		<script src="../hybrid.js"></script>
+		
+		<script src="../libs/jquery.min.js"></script>
+		<script src="../libs/testrunner.js"></script>
+		<script src="markdown-test.js"></script>
+		
+		<form action="./wysiwyg.html" method="post">
+			<textarea class="hybrid" id="hybrid-textarea">*dit is vet en, **italic***</textarea>
+		</form>
+	</body>
+</html>
