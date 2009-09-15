@@ -20,7 +20,7 @@ function Wysiwyg(origTextarea) {
 	}
 	
 	this.getTree = function () {
-		return buildTree(widget.childNodes);
+		return ['markdown'].concat(buildTree(widget.childNodes));
 	}
 	
 	this.getWidget = function () {
@@ -30,29 +30,33 @@ function Wysiwyg(origTextarea) {
 	/* Private functions */
 
 	function applyTree(tree, node) {
-		for (var i = 0; i < tree.length; i++) {
-			if (tree[i][0] == 'bold') {
-				var el = document.createElement('strong');
-			} else if (tree[i][0] == 'italic') {
-				var el = document.createElement('em');
-			} else {
-				console.log("Internal error");
+		var el = null;
+		if (typeof(tree) == 'string') {
+			el = document.createTextNode(tree);
+		} else if (tree[0] == 'markdown') {
+			el = node;
+		} else if (tree[0] == 'bold') {
+			el = document.createElement('strong');
+		} else if (tree[0] == 'italic') {
+			el = document.createElement('em');
+		} else {
+			//console.log("Internal error");
+			return;
+		}
+		if (typeof(tree) != 'string') {
+			for (var i = 1; i < tree.length; i++) {
+				applyTree(tree[i], el);
 			}
-			for (var j = 1; j < tree[i].length; j++) {
-				if (typeof(tree[i][j]) == "string") {
-					el.innerHTML = tree[i][j];
-				} else {
-					applyTree([tree[i][j]], el);
-				}
-			}
-			
+		}
+		
+		if (el != node) {
 			node.appendChild(el);
 		}
 	}
 	
 	function buildTree (nodes) {
 		var tree = [];
-		for (i = 0; i < nodes.length; i++) {
+		for (var i = 0; i < nodes.length; i++) {
 			var node = nodes[i];
 			var subTree = null;
 			if (node.nodeName.toLowerCase() == 'strong') {
@@ -80,21 +84,30 @@ function Wysiwyg(origTextarea) {
 		
 		if (hasTag(select.anchorNode, tag)) {
 			if (select.anchorNode == select.focusNode) {
-				otherPNodes = [];
-				// Go up the tree until we find the needed tag
-				// Meanwhile store all nodes in otherNodes
-				cur = select.anchorNode.parentNode;
-				while (cur.tagName.toLowerCase() != tag  && cur.tagName.toLowerCase() != 'div') {
-					otherPNodes.push(cur);
-					cur = cur.parentNode;
+				
+				// Uptree is an array, with all parent nodes of the
+				// Selected node + next Siblings of these parent nodes
+				var upTree = [];
+				var anchorSiblings = [];
+				sibling = select.anchorNode.nextSibling;
+				while (sibling != null) {
+					anchorSiblings.push(sibling);
+					sibling = sibling.nextSibling;
 				}
-				otherSiblingNodes = [];
-				nextS = select.anchorNode.nextSibling;
-				while (nextS != null) {
-					console.log("SIBLING");
-					otherSiblingNodes.push(nextS);
-					nextS = nextS.nextSibling;
-				}
+				var node = select.anchorNode;
+				var i = 0;
+				do {
+					node = node.parentNode;
+					var siblings = [];
+					sibling = node.nextSibling;
+					while (sibling != null) {
+						console.log(sibling);
+						siblings.push(sibling);
+						sibling = sibling.nextSibling;
+					}
+					upTree.push([node, siblings]);
+					i = i + 1;
+				} while (node.tagName.toLowerCase() != tag && node.tagName.toLowerCase() != 'div')
 				
 				if (select.anchorOffset < select.focusOffset) {
 					start = select.anchorOffset;
@@ -110,49 +123,67 @@ function Wysiwyg(origTextarea) {
 				selectedText = document.createTextNode(selected);
 				lastText = document.createTextNode(last);
 				
-				// anchorNode is a textNode with:
-				// text /selected text/ more text + more markup
-				// We have to close all otherNodes + cur before selected text
-				// We have to open all otherNodes before /selected text/
-				// We have to open cur before more text.
-				select.anchorNode.parentNode.replaceChild(firstText, select.anchorNode);
-				if (otherPNodes.length == 0) {
-					var selectedTag = selectedText;
-				} else {
-					var selectedTag = null;
-					var lastTag = null;
-					for (i = 0; i < otherPNodes.length; i++) {
-						var newTag = document.createElement(otherPNodes[i].nodeName);
-						if (i > 0) {
-							lastTag.appendChild(newTag);
-							lastTag = newTag;
-						} else {
-							lastTag = newTag;
-							selectedTag = newTag;
+				upTree[0][0].replaceChild(firstText, select.anchorNode);
+				// Do not include upTree[last], this is the tag we want to delete
+				var parentNode = upTree[upTree.length-1][0].parentNode;
+				var beforeNode = upTree[upTree.length-1][0].nextSibling;
+				if (upTree.length > 1) {
+					for (var i = upTree.length - 2; i >= 0; i--) {
+					
+						var node = upTree[i][0].cloneNode(false);
+						if (i == upTree.length - 2) {
+							var upperSelected = node;
 						}
+						if (i == 0) {
+							// Add the selected text in this node
+							node.appendChild(selectedText);
+						
+							// We also have to reinsert lastText, but we have to open the deleted node first.
+							var deleted = upTree[upTree.length-1][0].cloneNode(false);
+							deleted.appendChild(lastText);
+							node.appendChild(deleted);
+						}
+						if (beforeNode != null) {
+							parentNode.insertBefore(node, beforeNode);
+						} else {
+							parentNode.appendChild(node);
+						}
+						beforeNode = null;
+						parentNode = node;
 					}
-					selectedTag.appendChild(selectedText);
-				}
-				cur.parentNode.insertBefore(selectedTag, cur.nextSibling);
-				openTag = document.createElement(tag);
-				openTag.appendChild(lastText);
-				if (newTag) {
-					newTag.appendChild(openTag);
+					// Traverse the upTree once again, to recreate the siblings
+
+					var parentNode = upperSelected.parentNode;
+					var beforeNode = upperSelected.nextSibling;
+					for (var i = upTree.length-1; i > 0; i--) {
+						var node = upTree[i][0].cloneNode(false);
+						if (i > 0) {
+							// Append the siblings
+							for (var j = 0; j < upTree[i-1][1].length; j++) {
+								var sibling = upTree[i-1][1][j];
+								sibling.parentNode.removeChild(sibling);
+								node.appendChild(sibling);
+							}
+						}
+						parentNode.appendChild(node);
+						parentNode = node;
+					}
 				} else {
-					cur.parentNode.appendChild(openTag);
-				}
-				for (i = 0; i < otherSiblingNodes.length; i++) {
-					sibling = otherSiblingNodes[i];
-					sibling.parentNode.removeChild(sibling);
-					openTag.appendChild(sibling);
-				}
-				
-				if (firstText.length == 0) {
-					// Just delete cur
-					cur.parentNode.removeChild(cur);
-				}
-				if (lastText.length == 0) {
-					lastText.parentNode.removeChild(lastText);
+					console.log(upTree);
+					var original = upTree[0][0];
+					console.log(original);
+					if (original.nextSibling) {
+						original.parentNode.insertBefore(selectedText, original.nextSibling);
+					} else {
+						original.parentNode.appendChild(selectedText);
+					}
+					var originalBis = upTree[0][0].cloneNode(false);
+					originalBis.appendChild(lastText);
+					selectedText.parentNode.insertBefore(originalBis, selectedText.nextSibling);
+					
+					for (var i = 0; i < anchorSiblings.length; i++) {
+						originalBis.appendChild(anchorSiblings[i]);
+					}
 				}
 			} else {
 				alert("Operation not supported");

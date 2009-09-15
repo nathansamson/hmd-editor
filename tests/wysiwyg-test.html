@@ -7,12 +7,13 @@
 				width: 400px;
 				height: 200px;
 				border: solid 1px black;
+				margin-left: 10px;
 			}
 		</style>
 		<link href="qunit.css" rel="stylesheet" type="text/css" />
 	</head>
 	<body onload="start();">
-		<!-- <script src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script> -->
+		<script src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
 		
 		<script src="../markdown.js"></script>
 		<script src="../wysiwyg.js"></script>
@@ -21,8 +22,9 @@
 		<script src="../libs/jquery.min.js"></script>
 		<script src="../libs/testrunner.js"></script>
 		<script src="markdown-test.js"></script>
+		<script src="wysiwyg-test.js"></script>
 		
-		<form action="./wysiwyg.html" method="post">
+		<form action="" method="post">
 			<textarea class="hybrid" id="hybrid-textarea">*dit is vet en, **italic***</textarea>
 		</form>
 	</body>

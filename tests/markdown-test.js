@@ -20,3 +20,15 @@ test ("Markdown updated content to tree", function() {
 	actualTree = markdown.getTree();
 	same(actualTree, expectedTree, "Initial tree does not match.");
 })
+
+test ("Markdown tree to text", function() {
+	var textarea = getTextArea();
+	var wysiwyg = new Wysiwyg(textarea);
+	var markdown = new Markdown(textarea, wysiwyg.getWidget());
+	wysiwyg.show(['markdown']);
+	
+	var tree = ['markdown', 'This is some text. ', ['bold', 'This is bold and ', ['italic', 'italic'], '.']];
+	markdown.show(tree);
+	
+	equals(textarea.value, "This is some text. *This is bold and **italic**.*");
+})

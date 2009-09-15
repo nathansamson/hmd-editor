@@ -17,7 +17,7 @@ function Markdown(area, wysiwygWidget) {
 		var text = '';
 		
 		if (typeof(sub) == 'string') {
-			text += sub[i];
+			text += sub;
 		} else if (sub[0] == 'bold') {
 			text += '*';
 			for (var j = 1; j < sub.length; j++) {
