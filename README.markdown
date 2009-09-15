@@ -1,4 +1,5 @@
-h1. hmd-editor is A Hybrid Markdown editor
+hmd-editor is A Hybrid Markdown editor
+=====================================
 
 hmd-editor is A hybrid Markdown editor which can easily be used on your own site where you use textarea's now.
 The editor has 3 modes:
@@ -8,7 +9,8 @@ The editor has 3 modes:
 
 One can easily switch between 2 and 3.
 
-h2. Support
+Support
+-----------
 We aim for 
  * Firefox 3.0+ 
  * Webkit based browsers
