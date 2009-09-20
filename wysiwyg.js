@@ -62,6 +62,8 @@ function Wysiwyg(origTextarea) {
 			el = document.createElement('strong');
 		} else if (tree[0] == 'italic') {
 			el = document.createElement('em');
+		} else if (tree[0] == 'paragraph') {
+			el = document.createElement('p');
 		} else {
 			//console.log("Internal error");
 			return;
@@ -88,6 +90,8 @@ function Wysiwyg(origTextarea) {
 				subTree = ['italic'];
 			} else if (node.nodeName == '#text') {
 				subTree = node.data;
+			} else if (node.nodeName.toLowerCase() == 'p') {
+				subTree = ['paragraph'];
 			} else {
 				//console.log(node.nodeName);
 			}
@@ -124,7 +128,6 @@ function Wysiwyg(origTextarea) {
 					var siblings = [];
 					sibling = node.nextSibling;
 					while (sibling != null) {
-						console.log(sibling);
 						siblings.push(sibling);
 						sibling = sibling.nextSibling;
 					}
@@ -192,9 +195,7 @@ function Wysiwyg(origTextarea) {
 						parentNode = node;
 					}
 				} else {
-					console.log(upTree);
 					var original = upTree[0][0];
-					console.log(original);
 					if (original.nextSibling) {
 						original.parentNode.insertBefore(selectedText, original.nextSibling);
 					} else {
@@ -209,7 +210,6 @@ function Wysiwyg(origTextarea) {
 					}
 				}
 			} else {
-				alert("Operation not supported");
 				console.log(select.anchorNode);
 				console.log(select.focusNode);
 				console.log(select.anchorOffset);
@@ -246,7 +246,18 @@ function Wysiwyg(origTextarea) {
 					styledNode.parentNode.removeChild(lastText);
 				}
 			} else {
-				alert('Operation not yet supported...');
+				// First option, both are inside a different block level.
+				firstBlock = findFirstBlockLevel(select.anchorNode);
+				secondBlock = findFirstBlockLevel(select.focusNode);
+				
+				if (firstBlock == secondBlock) {
+					alert("We have a problem here...");
+				} else {
+					applyStyleToBlockLevel(firstBlock, tag, select.anchorNode,
+					                       select.anchorOffset, null, 0);
+					applyStyleToBlockLevel(secondBlock, tag, null, 0,
+					                       select.focusNode, select.focusOffset);
+				}
 			}
 		}
 	}
@@ -262,4 +273,153 @@ function Wysiwyg(origTextarea) {
 		}
 		return false;
 	}
+	
+	function findFirstBlockLevel(node) {
+		nodeName = node.nodeName.toLowerCase();
+		if (nodeName == 'p' || nodeName == 'div') {
+			return node;
+		} else {
+			return findFirstBlockLevel(node.parentNode);
+		}
+	}
+	
+	function applyStyleToBlockLevel(block, style,
+	                                startNode, startOffset,
+	                                endNode, endOffset) {
+		var styleNode = document.createElement(style);
+		var sibling;
+		if (startNode != null) {
+			if (startOffset != 0) {
+				sibling = startNode;
+			} else {
+				sibling = startNode;
+			}
+		} else {
+			sibling = block.firstChild;
+		}
+		var siblings = [];
+		while (sibling != endNode) {
+			if (sibling != null && endNode != null) {
+				contains = endNode.compareDocumentPosition(sibling) & Node.DOCUMENT_POSITION_CONTAINS;
+				if (contains) {
+					// is end Node the last node of sibling?
+					var cur = endNode;
+					var appliedStyles = [];
+					isEndNodeLastOf = true;
+					while (cur != sibling) {
+						if (cur.nextSibling == false) {
+							isEndNodeLastOf = false;
+						}
+						cur = cur.parentNode;
+						appliedStyles.push(cur);
+					}
+					if (endOffset >= endNode.length && isEndNodeLastOf || hasTag(endNode, style)) {
+						// Easy situation, just pull sibling into styleNode
+						siblings.push(sibling);
+						var nextSibling = sibling.nextSibling;
+						styleNode.appendChild(sibling);
+						sibling = nextSibling;
+					} else if (endOffset < endNode.length && isEndNodeLastOf) {
+						var inNode = document.createTextNode(endNode.data.substr(0, endOffset));
+						var outNode = createTextNode(appliedStyles, endNode.data.substr(endOffset));
+						siblings.push(sibling);
+						var nextSibling = sibling.nextSibling;
+						styleNode.appendChild(sibling);
+						sibling = nextSibling;
+						endNode.parentNode.replaceChild(inNode, endNode);
+						sibling.parentNode.insertBefore(outNode, sibling);
+						sibling = outNode;
+					} else {
+						console.log("FIXME");
+					}
+					break;
+				}
+			}
+			siblings.push(sibling);
+			var nextSibling = sibling.nextSibling;
+			styleNode.appendChild(sibling);
+			sibling = nextSibling;
+		}
+		for (var i = 0; i < siblings.length; i++) {
+			removeStyle(siblings[i], style);
+		}
+		block.insertBefore(styleNode, sibling);
+	}
+	
+	function removeStyle(node, style) {
+		if (node.nodeName.toLowerCase() == style) {
+			var prevSibling = node.previousSibling;
+			var nextSibling = node.nextSibling;
+			var first = node.firstChild;
+			var last = node.lastChild;
+			var start, end;
+			if (prevSibling != null && first.nodeName == prevSibling.nodeName) {
+				mergeNode(prevSibling, first);
+				start = 1;
+			} else {
+				start = 0;
+			}
+			if (nextSibling != null && last.nodeName == nextSibling.nodeName && first != last) {
+				end = 1;
+				mergeNode(nextSibling, last);
+			} else if (nextSibling != null && last.nodeName == nextSibling.nodeName) {
+				// First is last
+				// Also merge prevSibling with nextSibling
+				mergeNode(prevSibling, nextSibling);
+				nextSibling.parentNode.removeChild(nextSibling);
+				end = 1;
+			} else {
+				end = 0;
+			}
+			var childNodes = slice(node.childNodes, start, end);
+			for (var i = 0; i < childNodes.length; i++) {
+				node.parentNode.insertBefore(childNodes[i], nextSibling);
+			}
+			node.parentNode.removeChild(node);
+			return true;
+		} else {
+			if (node.hasChildNodes()) {
+				var childNodes = slice(node.childNodes);
+				for (var i = 0; i < childNodes.length; i++) {
+					removeStyle(childNodes[i], style);
+				}
+			}
+		}
+	}
+	
+	function mergeNode(node, merge) {
+		if (node.nodeName != "#text") {
+			for (var i = 0; i < merge.childNodes.length; i++) {
+				var child = merge.childNodes[i];
+				node.appendChild(child);
+			}
+		} else {
+			node.data += merge.data;
+		}
+	}
+	
+	function createTextNode(appliedStyles, text) {
+		var node, lastChild;
+		lastChild = document.createTextNode(text);
+		for (var i = appliedStyles.length - 1; i >= 0; i--) {	
+			node = appliedStyles[i].cloneNode(false);
+			node.appendChild(lastChild);
+			lastChild = node;
+		}
+		return lastChild;
+	}
+}
+
+function slice(nodes, start, end) {
+	var ret = [];
+	if (start == null) {
+		start = 0;
+		end = 0;
+	} else if (end == null) {
+		end = 0;
+	}
+	for (var i = start; i < nodes.length - end; i++) {
+		ret.push(nodes[i]);
+	}
+	return ret;
 }
