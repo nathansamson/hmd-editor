@@ -307,19 +307,20 @@ function Wysiwyg(origTextarea) {
 					var appliedStyles = [];
 					isEndNodeLastOf = true;
 					while (cur != sibling) {
-						if (cur.nextSibling == false) {
+						if (cur.nextSibling != null) {
 							isEndNodeLastOf = false;
 						}
 						cur = cur.parentNode;
 						appliedStyles.push(cur);
 					}
-					if (endOffset >= endNode.length && isEndNodeLastOf || hasTag(endNode, style)) {
+					if ((endOffset >= endNode.length || hasTag(endNode, style)) && isEndNodeLastOf) {
 						// Easy situation, just pull sibling into styleNode
 						siblings.push(sibling);
 						var nextSibling = sibling.nextSibling;
 						styleNode.appendChild(sibling);
 						sibling = nextSibling;
 					} else if (endOffset < endNode.length && isEndNodeLastOf) {
+						// endNode has not the current style, so we split it up.
 						var inNode = document.createTextNode(endNode.data.substr(0, endOffset));
 						var outNode = createTextNode(appliedStyles, endNode.data.substr(endOffset));
 						siblings.push(sibling);
@@ -330,7 +331,26 @@ function Wysiwyg(origTextarea) {
 						sibling.parentNode.insertBefore(outNode, sibling);
 						sibling = outNode;
 					} else {
-						console.log("FIXME");
+						if (hasTag(endNode, style)) {
+							siblings.push(sibling);
+							// We do not have to split up endNode
+							var original = endNode.parentNode.parentNode;
+							var curSibling = endNode.parentNode.nextSibling;
+							while (original != sibling.parentNode) {
+								var copy = original.cloneNode(false);
+								while (curSibling != null) {
+									var curNextSibling = curSibling.nextSibling;
+									copy.appendChild(curSibling);
+									curSibling = curNextSibling;
+								}
+								curSibling = original.nextSibling;
+								original = original.parentNode;
+							}
+							sibling.parentNode.insertBefore(copy, sibling.nextSibling);
+							styleNode.appendChild(sibling);
+							sibling = copy;
+							//sibling = sibling.nextSibling;
+						}
 					}
 					break;
 				}

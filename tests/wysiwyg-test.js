@@ -122,6 +122,27 @@ test ("Apply markup test in 2 block levels split last text node", function() {
 	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
 })
 
+test ("Apply markup test in 2 block levels split last text node", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' text.'],
+	                   ['paragraph', 'This is the second paragraph ', ['italic', 'with some ', ['bold', 'important'], ' text ', ['bold', 'and other markup']], '.']
+	                  ]);
+	
+	// Select The (in the first p) to "important" (in the last p).
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 0);
+	range.setEnd(this.wysiwyg.getWidget().firstChild.nextSibling.firstChild.nextSibling.firstChild.nextSibling.firstChild, 3);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	
+	expectedDOM = [['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' text.']]]],
+				   ['p', [['strong', ['This is the second paragraph ', ['em', ['with some important']]]], ['em', [' text ', ['strong', ['and other markup']]]], '.']]
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
 test ("Remove markup test", function() {	
 	// Select the word "bold", and remove the boldness.
 	var selection = window.getSelection();
