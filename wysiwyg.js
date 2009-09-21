@@ -253,10 +253,17 @@ function Wysiwyg(origTextarea) {
 				if (firstBlock == secondBlock) {
 					alert("We have a problem here...");
 				} else {
-					applyStyleToBlockLevel(firstBlock, tag, select.anchorNode,
-					                       select.anchorOffset, null, 0);
+					// Some browsers, touch the selection.
+					// So we copy the nodes before working on them so we
+					// are not affected when the selection disappears.
+					var anchorOffset = select.anchorOffset;
+					var anchorNode = select.anchorNode;
+					var focusNode = select.focusNode;
+					var focusOffset = select.focusOffset;
+					applyStyleToBlockLevel(firstBlock, tag, anchorNode,
+					                       anchorOffset, null, 0);
 					applyStyleToBlockLevel(secondBlock, tag, null, 0,
-					                       select.focusNode, select.focusOffset);
+					                       focusNode, focusOffset);
 				}
 			}
 		}
