@@ -305,67 +305,84 @@ function Wysiwyg(origTextarea) {
 			sibling = block.firstChild;
 		}
 		var siblings = [];
-		while (sibling != endNode) {
-			if (sibling != null && endNode != null) {
-				contains = endNode.compareDocumentPosition(sibling) & Node.DOCUMENT_POSITION_CONTAINS;
-				if (contains) {
-					// is end Node the last node of sibling?
-					var cur = endNode;
-					var appliedStyles = [];
-					isEndNodeLastOf = true;
-					while (cur != sibling) {
-						if (cur.nextSibling != null) {
-							isEndNodeLastOf = false;
-						}
-						cur = cur.parentNode;
-						appliedStyles.push(cur);
-					}
-					if ((endOffset >= endNode.length || hasTag(endNode, style)) && isEndNodeLastOf) {
-						// Easy situation, just pull sibling into styleNode
-						siblings.push(sibling);
-						var nextSibling = sibling.nextSibling;
-						styleNode.appendChild(sibling);
-						sibling = nextSibling;
-					} else if (endOffset < endNode.length && isEndNodeLastOf) {
-						// endNode has not the current style, so we split it up.
-						var inNode = document.createTextNode(endNode.data.substr(0, endOffset));
-						var outNode = createTextNode(appliedStyles, endNode.data.substr(endOffset));
-						siblings.push(sibling);
-						var nextSibling = sibling.nextSibling;
-						styleNode.appendChild(sibling);
-						sibling = nextSibling;
-						endNode.parentNode.replaceChild(inNode, endNode);
-						sibling.parentNode.insertBefore(outNode, sibling);
-						sibling = outNode;
-					} else {
-						if (hasTag(endNode, style)) {
-							siblings.push(sibling);
-							// We do not have to split up endNode
-							var original = endNode.parentNode.parentNode;
-							var curSibling = endNode.parentNode.nextSibling;
-							while (original != sibling.parentNode) {
-								var copy = original.cloneNode(false);
-								while (curSibling != null) {
-									var curNextSibling = curSibling.nextSibling;
-									copy.appendChild(curSibling);
-									curSibling = curNextSibling;
-								}
-								curSibling = original.nextSibling;
-								original = original.parentNode;
-							}
-							sibling.parentNode.insertBefore(copy, sibling.nextSibling);
-							styleNode.appendChild(sibling);
-							sibling = copy;
-							//sibling = sibling.nextSibling;
-						}
-					}
-					break;
-				}
+		if (sibling == endNode) {
+			if (endOffset >= endNode.length) {
+				var nextSibling = sibling.nextSibling;
+				siblings.push(sibling);
+				styleNode.appendChild(sibling);
+				sibling = nextSibling;
+			} else {
+				// This can not have any applied styles, because endNode would not be sibling.
+				var nextSibling = createTextNode([], sibling.data.substr(endOffset));
+				sibling.data = sibling.data.substr(0, endOffset);
+				siblings.push(sibling);
+				sibling.parentNode.insertBefore(nextSibling, sibling.nextSibling);
+				styleNode.appendChild(sibling);
+				sibling = nextSibling;
 			}
-			siblings.push(sibling);
-			var nextSibling = sibling.nextSibling;
-			styleNode.appendChild(sibling);
-			sibling = nextSibling;
+		} else {
+			while (sibling != endNode) {
+				if (sibling != null && endNode != null) {
+					contains = endNode.compareDocumentPosition(sibling) & Node.DOCUMENT_POSITION_CONTAINS;
+					if (contains) {
+						// is end Node the last node of sibling?
+						var cur = endNode;
+						var appliedStyles = [];
+						isEndNodeLastOf = true;
+						while (cur != sibling) {
+							if (cur.nextSibling != null) {
+								isEndNodeLastOf = false;
+							}
+							cur = cur.parentNode;
+							appliedStyles.push(cur);
+						}
+						if ((endOffset >= endNode.length || hasTag(endNode, style)) && isEndNodeLastOf) {
+							// Easy situation, just pull sibling into styleNode
+							siblings.push(sibling);
+							var nextSibling = sibling.nextSibling;
+							styleNode.appendChild(sibling);
+							sibling = nextSibling;
+						} else if (endOffset < endNode.length && isEndNodeLastOf) {
+							// endNode has not the current style, so we split it up.
+							var inNode = document.createTextNode(endNode.data.substr(0, endOffset));
+							var outNode = createTextNode(appliedStyles, endNode.data.substr(endOffset));
+							siblings.push(sibling);
+							var nextSibling = sibling.nextSibling;
+							styleNode.appendChild(sibling);
+							sibling = nextSibling;
+							endNode.parentNode.replaceChild(inNode, endNode);
+							sibling.parentNode.insertBefore(outNode, sibling);
+							sibling = outNode;
+						} else {
+							if (hasTag(endNode, style)) {
+								siblings.push(sibling);
+								// We do not have to split up endNode
+								var original = endNode.parentNode.parentNode;
+								var curSibling = endNode.parentNode.nextSibling;
+								while (original != sibling.parentNode) {
+									var copy = original.cloneNode(false);
+									while (curSibling != null) {
+										var curNextSibling = curSibling.nextSibling;
+										copy.appendChild(curSibling);
+										curSibling = curNextSibling;
+									}
+									curSibling = original.nextSibling;
+									original = original.parentNode;
+								}
+								sibling.parentNode.insertBefore(copy, sibling.nextSibling);
+								styleNode.appendChild(sibling);
+								sibling = copy;
+								//sibling = sibling.nextSibling;
+							}
+						}
+						break;
+					}
+				}
+				siblings.push(sibling);
+				var nextSibling = sibling.nextSibling;
+				styleNode.appendChild(sibling);
+				sibling = nextSibling;
+			}
 		}
 		for (var i = 0; i < siblings.length; i++) {
 			removeStyle(siblings[i], style);
