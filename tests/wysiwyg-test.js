@@ -185,6 +185,77 @@ test ("Apply markup test in 2 blocks last block split first node", function() {
 	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
 })
 
+test ("Apply markup test in multiple blocks", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' text.'],
+	                   ['paragraph', 'Another paragraph.'],
+	                   ['paragraph', '3th paragraph.', ['bold', ' With bold text.'], ['italic', ' Italic text.', ['bold', ' And bold text.']]],
+	                   'Some simple text.',
+	                   ['italic', ' Some simple italic text.'],
+	                   ['bold', ' Some simple bold text.'],
+	                   ['italic', ['bold', ' With some more text.']],
+	                   ['paragraph', '4th paragragph.', ['bold', ' With bold text.'], ['italic', ' Italic text.']],
+	                   ['paragraph', 'This is the second paragraph.', ['italic', ' And more italic text.']]
+	                  ]);
+
+	// Select The (in the first p) to "text." (in the last p).
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 0);
+	range.setEnd(this.wysiwyg.getWidget().lastChild.lastChild.firstChild, 22);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	expectedDOM = [['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' text.']]]],
+				   ['p', [['strong', ['Another paragraph.']]]],
+				   ['p', [['strong', ['3th paragraph. With bold text.', ['em', [' Italic text. And bold text.']]]]]],
+				   ['strong', ['Some simple text.', ['em', [' Some simple italic text.']], ' Some simple bold text.', ['em', [' With some more text.']]]],
+				   ['p', [['strong', ['4th paragragph. With bold text.', ['em', [' Italic text.']]]]]],
+	               ['p', [['strong', ['This is the second paragraph.', ['em', [' And more italic text.']]]]]]
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
+test ("Apply markup test in one block", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' text.'],
+	                   ['paragraph', 'This is the second paragraph.', ['italic', ' And more italic text.']]
+	                  ]);
+	
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 0);
+	range.setEnd(this.wysiwyg.getWidget().firstChild.lastChild, 6);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	
+	expectedDOM = [['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' text.']]]],
+				   ['p', ['This is the second paragraph.', ['em', [' And more italic text.']]]]
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
+test ("Apply markup test in one block split last text node", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' more text.'],
+	                   ['paragraph', 'This is the second paragraph.', ['italic', ' And more italic text.']]
+	                  ]);
+	
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 0);
+	range.setEnd(this.wysiwyg.getWidget().firstChild.lastChild, 5);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	
+	expectedDOM = [['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' more']], ' text.']],
+				   ['p', ['This is the second paragraph.', ['em', [' And more italic text.']]]]
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
 test ("Remove markup test", function() {	
 	// Select the word "bold", and remove the boldness.
 	var selection = window.getSelection();

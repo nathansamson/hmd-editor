@@ -246,22 +246,40 @@ function Wysiwyg(origTextarea) {
 					styledNode.parentNode.removeChild(lastText);
 				}
 			} else {
-				// First option, both are inside a different block level.
 				firstBlock = findFirstBlockLevel(select.anchorNode);
 				secondBlock = findFirstBlockLevel(select.focusNode);
-				
+				// Some browsers, touch the selection.
+				// So we copy the nodes before working on them so we
+				// are not affected when the selection disappears.
+				var anchorOffset = select.anchorOffset;
+				var anchorNode = select.anchorNode;
+				var focusNode = select.focusNode;
+				var focusOffset = select.focusOffset;
 				if (firstBlock == secondBlock) {
-					alert("We have a problem here...");
+					applyStyleToBlockLevel(firstBlock, tag,
+					                       anchorNode, anchorOffset,
+					                       focusNode, focusOffset);
 				} else {
-					// Some browsers, touch the selection.
-					// So we copy the nodes before working on them so we
-					// are not affected when the selection disappears.
-					var anchorOffset = select.anchorOffset;
-					var anchorNode = select.anchorNode;
-					var focusNode = select.focusNode;
-					var focusOffset = select.focusOffset;
+					var currentBlock = firstBlock.nextSibling;
 					applyStyleToBlockLevel(firstBlock, tag, anchorNode,
 					                       anchorOffset, null, 0);
+					var simpleNodes = [];
+					while (currentBlock != secondBlock) {
+						if (isBlockTag(currentBlock)) {
+							if (simpleNodes.length != 0) {
+								var lastTextNode = findLastTextNode(simpleNodes[simpleNodes.length-1]);
+								var firstTextNode = findFirstTextNode(simpleNodes[0]);
+								applyStyleToBlockLevel(currentBlock.parentNode, tag,
+								                       firstTextNode, 0,
+								                       lastTextNode, lastTextNode.data.length);
+								simpleNodes = [];
+							}
+							applyStyleToBlockLevel(currentBlock, tag);
+						} else {
+							simpleNodes.push(currentBlock);
+						}
+						currentBlock = currentBlock.nextSibling;
+					}
 					applyStyleToBlockLevel(secondBlock, tag, null, 0,
 					                       focusNode, focusOffset);
 				}
@@ -282,12 +300,16 @@ function Wysiwyg(origTextarea) {
 	}
 	
 	function findFirstBlockLevel(node) {
-		nodeName = node.nodeName.toLowerCase();
-		if (nodeName == 'p' || nodeName == 'div') {
+		if (isBlockTag(node)) {
 			return node;
 		} else {
 			return findFirstBlockLevel(node.parentNode);
 		}
+	}
+	
+	function isBlockTag(node) {
+		var nodeName = node.nodeName.toLowerCase();
+		return (nodeName == 'p' || nodeName == 'div');
 	}
 	
 	function applyStyleToBlockLevel(block, style,
@@ -307,6 +329,7 @@ function Wysiwyg(origTextarea) {
 		var siblings = [];
 		if (sibling == endNode) {
 			if (endOffset >= endNode.length) {
+				// We have to 
 				var nextSibling = sibling.nextSibling;
 				siblings.push(sibling);
 				styleNode.appendChild(sibling);
@@ -383,6 +406,21 @@ function Wysiwyg(origTextarea) {
 				styleNode.appendChild(sibling);
 				sibling = nextSibling;
 			}
+			if (sibling != null && sibling == endNode) {
+				if (sibling.data.length > endOffset) {
+					var nextSibling = createTextNode([], sibling.data.substr(endOffset));
+					sibling.data = sibling.data.substr(0, endOffset);
+					siblings.push(sibling);
+					sibling.parentNode.insertBefore(nextSibling, sibling.nextSibling);
+					styleNode.appendChild(sibling);
+					sibling = nextSibling;
+				} else {
+					var nextSibling = sibling.nextSibling;
+					siblings.push(sibling);
+					styleNode.appendChild(sibling);
+					sibling = nextSibling;
+				}
+			}
 		}
 		for (var i = 0; i < siblings.length; i++) {
 			removeStyle(siblings[i], style);
@@ -451,6 +489,22 @@ function Wysiwyg(origTextarea) {
 			lastChild = node;
 		}
 		return lastChild;
+	}
+	
+	function findFirstTextNode(node) {
+		if (node.nodeName != '#text') {
+			return findFirstTextNode(node.firstChild);
+		} else {
+			return node;
+		}
+	}
+	
+	function findLastTextNode(node) {
+		if (node.nodeName != '#text') {
+			return findLastTextNode(node.lastChild);
+		} else {
+			return node;
+		}
 	}
 }
 
