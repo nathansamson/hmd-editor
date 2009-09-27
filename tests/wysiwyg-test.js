@@ -256,6 +256,119 @@ test ("Apply markup test in one block split last text node", function() {
 	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
 })
 
+test ("Apply markup test multiple blocks last is no block tag group", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' text.'],
+	                   ['paragraph', 'Another paragraph.'],
+	                   ['paragraph', '3th paragraph.', ['bold', ' With bold text.'], ['italic', ' Italic text.', ['bold', ' And bold text.']]],
+	                   'Some simple text.',
+	                   ['italic', ' Some simple italic text.'],
+	                   ['bold', ' Some simple bold text.'],
+	                   ['italic', ['bold', ' With some more text.']],
+	                  ]);
+
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 0);
+	range.setEnd(this.wysiwyg.getWidget().lastChild.firstChild.firstChild, 21);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	
+	expectedDOM = [['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' text.']]]],
+				   ['p', [['strong', ['Another paragraph.']]]],
+				   ['p', [['strong', ['3th paragraph. With bold text.', ['em', [' Italic text. And bold text.']]]]]],
+				   ['strong', ['Some simple text.', ['em', [' Some simple italic text.']], ' Some simple bold text.', ['em', [' With some more text.']]]],
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
+test ("Apply markup test multiple blocks last is no block tag group not complete but has style", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' text.'],
+	                   ['paragraph', 'Another paragraph.'],
+	                   ['paragraph', '3th paragraph.', ['bold', ' With bold text.'], ['italic', ' Italic text.', ['bold', ' And bold text.']]],
+	                   'Some simple text.',
+	                   ['italic', ' Some simple italic text.'],
+	                   ['bold', ' Some simple bold text.'],
+	                   ['italic', ['bold', ' With some more text.']],
+	                  ]);
+
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 0);
+	range.setEnd(this.wysiwyg.getWidget().lastChild.firstChild.firstChild, 5);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	
+	expectedDOM = [['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' text.']]]],
+				   ['p', [['strong', ['Another paragraph.']]]],
+				   ['p', [['strong', ['3th paragraph. With bold text.', ['em', [' Italic text. And bold text.']]]]]],
+				   ['strong', ['Some simple text.', ['em', [' Some simple italic text.']], ' Some simple bold text.', ['em', [' With some more text.']]]],
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
+test ("Apply markup test multiple blocks last is no block tag group not complete but has not style", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' text.'],
+	                   ['paragraph', 'Another paragraph.'],
+	                   ['paragraph', '3th paragraph.', ['bold', ' With bold text.'], ['italic', ' Italic text.', ['bold', ' And bold text.']]],
+	                   'Some simple text.',
+	                   ['italic', ' Some simple italic text.'],
+	                   ['bold', ' Some simple bold text.'],
+	                   ['italic', ' With some more text.'],
+	                  ]);
+
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 0);
+	range.setEnd(this.wysiwyg.getWidget().lastChild.firstChild, 5);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	
+	expectedDOM = [['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' text.']]]],
+				   ['p', [['strong', ['Another paragraph.']]]],
+				   ['p', [['strong', ['3th paragraph. With bold text.', ['em', [' Italic text. And bold text.']]]]]],
+				   ['strong', ['Some simple text.', ['em', [' Some simple italic text.']], ' Some simple bold text.', ['em', [' With']]]],
+				   ['em', [' some more text.']],
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
+test ("Apply markup test multiple blocks first is no block tag", function() {
+	this.markdown.show(['markdown'])
+	this.wysiwyg.show(['markdown', 
+		               ['italic', 'Some simple italic text.'],
+	                   ' Some simple text.',
+	                   ['bold', ' Some simple bold text.'],
+	                   ['italic', ' With some more text.'],
+	                   ['paragraph', 'The ', ['bold', 'first paragraph'], ' with some ', ['italic', 'emphasized'], ' text.'],
+	                   ['paragraph', 'Another paragraph.'],
+	                   ['paragraph', '3th paragraph.', ['bold', ' With bold text.'], ['italic', ' Italic text.', ['bold', ' And bold text.']]],
+	                  ]);
+
+	var selection = window.getSelection();
+	var range = document.createRange();
+	range.setStart(this.wysiwyg.getWidget().firstChild.firstChild, 5);
+	range.setEnd(this.wysiwyg.getWidget().lastChild.firstChild, 3);
+	selection.addRange(range);
+	this.wysiwyg.bold();
+	
+	this.hide = false;
+	expectedDOM = [['em', ['Some ']],
+	               ['strong', [['em', ['simple italic text.']], ' Some simple text. Some simple bold text.', ['em', [' With some more text.']]]],
+	               ['p', [['strong', ['The first paragraph with some ', ['em', ['emphasized']], ' text.']]]],
+				   ['p', [['strong', ['Another paragraph.']]]],
+				   ['p', [['strong', ['3th']],' paragraph.', 
+				          ['strong', [' With bold text.']], 
+				          ['em', [' Italic text.', ['strong',[' And bold text.']]]]]],
+				  ];
+	ok(checkDOM(this.wysiwyg.getWidget().childNodes, expectedDOM), "DOM does not match");
+})
+
 test ("Remove markup test", function() {	
 	// Select the word "bold", and remove the boldness.
 	var selection = window.getSelection();

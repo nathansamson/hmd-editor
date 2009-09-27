@@ -261,16 +261,27 @@ function Wysiwyg(origTextarea) {
 					                       focusNode, focusOffset);
 				} else {
 					var currentBlock = firstBlock.nextSibling;
-					applyStyleToBlockLevel(firstBlock, tag, anchorNode,
-					                       anchorOffset, null, 0);
+					if (secondBlock.compareDocumentPosition(firstBlock) & Node.DOCUMENT_POSITION_CONTAINS) {
+						currentBlock = anchorNode;
+						while (currentBlock.parentNode != firstBlock) {
+							currentBlock = currentBlock.parentNode;
+						}
+					} else {
+						applyStyleToBlockLevel(firstBlock, tag, anchorNode,
+						                       anchorOffset, null, 0);
+					}
 					var simpleNodes = [];
-					while (currentBlock != secondBlock) {
+					while (currentBlock != secondBlock && currentBlock != null) {
 						if (isBlockTag(currentBlock)) {
 							if (simpleNodes.length != 0) {
 								var lastTextNode = findLastTextNode(simpleNodes[simpleNodes.length-1]);
 								var firstTextNode = findFirstTextNode(simpleNodes[0]);
+								var start = 0;
+								if (firstTextNode == anchorNode && anchorOffset != 0) {
+									start = anchorOffset;
+								}
 								applyStyleToBlockLevel(currentBlock.parentNode, tag,
-								                       firstTextNode, 0,
+								                       firstTextNode, start,
 								                       lastTextNode, lastTextNode.data.length);
 								simpleNodes = [];
 							}
@@ -280,8 +291,17 @@ function Wysiwyg(origTextarea) {
 						}
 						currentBlock = currentBlock.nextSibling;
 					}
-					applyStyleToBlockLevel(secondBlock, tag, null, 0,
-					                       focusNode, focusOffset);
+					if (simpleNodes.length != 0) {
+						var lastTextNode = findLastTextNode(simpleNodes[simpleNodes.length-1]);
+						var firstTextNode = findFirstTextNode(simpleNodes[0]);
+						applyStyleToBlockLevel(secondBlock, tag,
+						                       firstTextNode, 0,
+						                       lastTextNode, focusOffset);
+						simpleNodes = [];
+					} else {
+						applyStyleToBlockLevel(secondBlock, tag, null, 0,
+						                       focusNode, focusOffset);
+					}
 				}
 			}
 		}
@@ -322,6 +342,16 @@ function Wysiwyg(origTextarea) {
 				sibling = startNode;
 			} else {
 				sibling = startNode;
+			}
+			var appliedStyles = [];
+			while (sibling.parentNode != block) {
+				sibling = sibling.parentNode;
+				appliedStyles.push(sibling);
+			}
+			if (startOffset != 0) {
+				var outNode = createTextNode(appliedStyles, startNode.data.substr(0, startOffset));
+				startNode.data = startNode.data.substr(startOffset);
+				sibling.parentNode.insertBefore(outNode, sibling);
 			}
 		} else {
 			sibling = block.firstChild;
@@ -371,10 +401,11 @@ function Wysiwyg(origTextarea) {
 							var outNode = createTextNode(appliedStyles, endNode.data.substr(endOffset));
 							siblings.push(sibling);
 							var nextSibling = sibling.nextSibling;
+							var parentNode = sibling.parentNode;
 							styleNode.appendChild(sibling);
 							sibling = nextSibling;
-							endNode.parentNode.replaceChild(inNode, endNode);
-							sibling.parentNode.insertBefore(outNode, sibling);
+							endNode.parentNode.replaceChild(inNode, endNode);							
+							parentNode.insertBefore(outNode, sibling);
 							sibling = outNode;
 						} else {
 							if (hasTag(endNode, style)) {
